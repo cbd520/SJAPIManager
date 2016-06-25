@@ -59,8 +59,8 @@
     [super beforePerformSuccessWithResponse:response];
     if(self.isLoadNew){
         page=1;
-        pageSize=[response.result[@"count"] intValue];
-        total=[response.result[@"total"] integerValue];
+        pageSize = [response.content[@"count"] intValue];
+        total = [response.content[@"total"] integerValue];
     }
     self.isLastPage=(total<=page*pageSize);
     self.code=response.responseCode;

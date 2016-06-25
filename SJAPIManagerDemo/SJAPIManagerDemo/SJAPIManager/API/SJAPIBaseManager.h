@@ -81,7 +81,6 @@ typedef NS_ENUM (NSUInteger, SJAPIManagerRequestType){
 - (SJAPIManagerRequestType)requestType;
 @optional
 - (NSString *)cacheRegexKey;
-
 @optional
 /**
  *   用于给继承的类做重载，在调用API之前额外添加一些参数,但不应该在这个函数里面修改已有的参数。
