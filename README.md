@@ -13,7 +13,7 @@
 
 使用方法举例:  
 用Demo中的TestAPI举例:  
-1.使用方法, 将`TestAPI`接口封装成类, 继承于`SJAPIResponse`  
+1.将`TestAPI`接口封装成类, 继承于`SJAPIBaseManager`  
 2.在具体api的init方法中设置相关代理, 一般该api作为代理, 即`self.paramSource = self;` 等等  
 3.遵守协议`<SJAPIManager, SJAPIManagerParamSourceDelegate, SJAPIManagerHeaderSourceDelegate, 等等>`, 每个协议具体功能及需要实现哪些方法见协议方法  
 举例 :

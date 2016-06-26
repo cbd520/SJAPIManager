@@ -11,7 +11,7 @@
 
 /**
  用TestAPI举例:
- 1. 使用方法, 将TestAPI接口封装成类, 继承于SJAPIResponse
+ 1. 将TestAPI接口封装成类, 继承于SJAPIBaseManager
  2. 在具体api的init方法中设置相关代理, 一般该api作为代理, 即self.paramSource = self; 等等
  3. 遵守协议<SJAPIManager, SJAPIManagerParamSourceDelegate, SJAPIManagerHeaderSourceDelegate, 等等>, 每个协议具体功能及需要实现哪些方法见协议方法
  4. 在控制器内懒加载TestAPI, 同时设置_testAPI.delegate = self, 指定该控制器为接口的代理, 实现下面两个回调方法
