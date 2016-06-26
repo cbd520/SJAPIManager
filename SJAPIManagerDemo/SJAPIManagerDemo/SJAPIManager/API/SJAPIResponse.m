@@ -12,17 +12,28 @@
 
 @interface SJAPIResponse()
 
-@property (nonatomic, assign, readwrite) SJSURLResponseStatus status; //响应状态
-@property (nonatomic, copy, readwrite) NSString *contentString;    //
+/** 响应状态 */
+@property (nonatomic, assign, readwrite) SJSURLResponseStatus status;
+/** 回调json字符串 */
+@property (nonatomic, copy, readwrite) NSString *contentString;
+/** 回调对象, 字典或者数组 */
 @property (nonatomic, copy, readwrite) id content;
+/** 请求记录id (app生命周期内递增不会减少) */
 @property (nonatomic, assign, readwrite) NSInteger requestId;
+/** 请求 */
 @property (nonatomic, copy, readwrite) NSURLRequest *request;
+/** 回调json的二进制Data */
 @property (nonatomic, copy, readwrite) NSData *responseData;
+/** 回调json的实际数据字典(不含返回码及message) */
 @property (nonatomic, copy, readwrite) NSDictionary *result;
+/** 返回码 */
 @property (nonatomic,assign, readwrite) int responseCode;
+/** 返回message */
 @property (nonatomic,copy, readwrite) NSString *responseMessage;
-@property (nonatomic, assign, readwrite) BOOL isCache;
+/** 错误信息 */
 @property (nonatomic, strong, readwrite) NSError *error;
+/** 是否是缓存数据 */
+@property (nonatomic, assign, readwrite) BOOL isCache;
 
 @end
 
@@ -30,48 +41,54 @@
 
 #pragma mark - life cycle
 //成功走这里, 这里需要根据公司不同格式定制
-- (instancetype)initWithResponseString:(NSString *)responseString requestId:(NSNumber *)requestId request:(NSURLRequest *)request responseData:(NSData *)responseData status:(SJSURLResponseStatus)status params:(NSDictionary *)params
+- (instancetype)initWithStatus:(SJSURLResponseStatus)status requestId:(NSNumber *)requestId request:(NSURLRequest *)request params:(NSDictionary *)params responseData:(NSData *)responseData responseString:(NSString *)responseString
 {
     self = [super init];
     if (self) {
-        self.contentString = responseString;
-        self.content = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:NULL];
         self.status = status;
+        
         self.requestId = [requestId integerValue];
         self.request = request;
-        self.responseData = responseData;
         self.requestParams = params;
-        self.isCache = NO;
-        //以下需定制
+        
+        self.responseData = responseData;
+        self.contentString = responseString;
+        self.content = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:NULL];
         self.responseCode = [self.content[@"code"] intValue];
-        NSLog(@"successCode : %d", self.responseCode);
         self.responseMessage = self.content[@"message"];
         self.result = self.content[@"data"];
+        
+        NSLog(@"successCode : %d", self.responseCode);
+        
+        self.isCache = NO;
     }
     return self;
 }
 
 //错误走这里, 这里需要根据公司不同格式定制
-- (instancetype)initWithResponseString:(NSString *)responseString requestId:(NSNumber *)requestId request:(NSURLRequest *)request responseData:(NSData *)responseData error:(NSError *)error
+- (instancetype)initWithRequestId:(NSNumber *)requestId request:(NSURLRequest *)request responseData:(NSData *)responseData  responseString:(NSString *)responseString error:(NSError *)error
 {
     self = [super init];
     if (self) {
-        self.contentString = [responseString SJ_defaultValue:@""];
         self.status = [self responseStatusWithError:error];
+        
         self.requestId = [requestId integerValue];
         self.request = request;
-        self.responseData = responseData;
         self.requestParams = request.requestParams;
-        self.isCache = NO;
+        
+        self.responseData = responseData;
+        self.contentString = [responseString SJ_defaultValue:@""];
         self.error = error;
         
         if (responseData) {
             self.content = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingMutableContainers error:NULL];
             self.responseCode = [self.content[@"code"] intValue];
-            self.result = self.content[@"result"];
+            self.result = self.content[@"data"];
         } else {
             self.content = nil;
         }
+        
+        self.isCache = NO;
     }
     return self;
 }
@@ -81,16 +98,20 @@
 {
     self = [super init];
     if (self) {
-        self.contentString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        self.status = [self responseStatusWithError:nil];
+        self.status = SJSURLResponseStatusSuccess;
+        
         self.requestId = 0;
         self.request = nil;
-        self.responseData = [data copy];
-        self.content = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:NULL];
-        self.isCache = YES;
-        self.responseCode = [self.content[@"code"] intValue];
-        self.result = self.content[@"result"];
         
+        self.responseData = [data copy];
+        self.contentString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        self.content = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:NULL];
+        
+        self.responseCode = [self.content[@"code"] intValue];
+        self.responseMessage = self.content[@"message"];
+        self.result = self.content[@"data"];
+        
+        self.isCache = YES;
     }
     return self;
 }

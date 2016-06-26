@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "-[SJAPIBaseManager shouldCallAPIWithParams:]:SJAPIBaseManager.m">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.interceptor">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "-[SJAPIBaseManager removeRequestIdWithRequestID:]:SJAPIBaseManager.m">
+         <PersistentStrings>
+            <PersistentString
+               value = "self.requestIdList">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "-[SJAPIBaseManager loadData]:SJAPIBaseManager.m">
+         <PersistentStrings>
+            <PersistentString
+               value = "params">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "-[TestAPI beforePerformSuccessWithResponse:]:TestAPI.m">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>

@@ -35,18 +35,16 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
 }
 
 @interface SJAPIBaseManager ()
-//{
-//    int page;//记录页码值
-//    int pageSize;//每页条数
-//    NSInteger total;//记录总条数
-//    
-//}
-//未加工的Data
-@property (nonatomic, strong, readwrite) id fetchedRawData;
 
+/** 原始数据, 字典或者数组或者NSData */
+@property (nonatomic, strong, readwrite) id fetchedRawData;
+/** 错误信息 */
 @property (nonatomic, copy, readwrite) NSString *errorMessage;
+/** 错误类型: 默认/成功/返回数据不正确/参数错误/超时/网络故障 */
 @property (nonatomic, readwrite) SJAPIManagerErrorType errorType;
+/** 请求id(app生命周期内递增) */
 @property (nonatomic, strong) NSMutableArray *requestIdList;
+/** 缓存对象 */
 @property (nonatomic, strong) SJCache *cache;
 
 
@@ -55,7 +53,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
 
 @implementation SJAPIBaseManager
 
-#pragma mark - getters and setters
+#pragma mark - --getters and setters
 - (SJCache *)cache
 {
     if (_cache == nil) {
@@ -85,7 +83,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     return [self.requestIdList count] > 0;
 }
 
-#pragma mark - life cycle
+#pragma mark - --life cycle
 - (instancetype)init
 {
     self = [super init];
@@ -112,7 +110,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     self.requestIdList = nil;
 }
 
-#pragma mark - public methods
+#pragma mark - --公有方法
 - (void)cancelAllRequests
 {
     [[SJApiProxy sharedInstance] cancelRequestWithRequestIDList:self.requestIdList];
@@ -137,36 +135,38 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     return resultData;
 }
 
-#pragma mark - calling api
-- (NSInteger)loadData
-{
-    NSDictionary *params = [self.paramSource paramsForAPI:self];
-    NSDictionary *headers = [self.headerSource headersForAPI:self];
-    NSDictionary *uploads = [self.uploadsSource uploadsForAPI:self];
-    NSInteger requestId = [self loadDataWithParams:params headers:headers uploads:uploads];
-    return requestId;
-}
-
-
 -(void)invalidCache
 {
     NSString *methodName = [self getMethodName];
     [self.cache deleteCacheWithMethodName:methodName];
 }
 
+#pragma mark - --发起请求
+- (NSInteger)loadData
+{
+    //参数等通过代理获得, 所以即使是子类, 也一定要遵守协议, 实现代理
+    NSDictionary *params = [self.paramSource paramsForAPI:self];
+    NSDictionary *headers = [self.headerSource headersForAPI:self];
+    NSDictionary *uploads = [self.uploadsSource uploadsForAPI:self];
+    //loadData是子类调用父类方法实现的
+    NSInteger requestId = [self loadDataWithParams:params headers:headers uploads:uploads];
+    return requestId;
+}
+
+
 - (NSInteger)loadDataWithParams:(NSDictionary *)params headers:(NSDictionary*)headers uploads:(NSDictionary*) uploads
 {
     NSInteger requestId = 0;
+    
     NSDictionary *apiParams = [self reformParams:params];
     
-    
-    if ([self shouldCallAPIWithParams:apiParams]) {       //没有使用过, 都返回YES了, 根据参数判断是否允许发出
-        if ([self isCorrectWithParamsData:apiParams]) {    //没有使用过, 都返回YES了, 判断参数是否正确
+    if ([self shouldCallAPIWithParams:apiParams]) {       //通过参数决定是否发送请求
+        if ([self isCorrectWithParamsData:apiParams]) {    //检查参数正确性
             
             // 先检查一下是否有缓存
             if (self.child.requestType == SJAPIManagerRequestTypeGet && [self shouldCache] && [self hasCacheWithParams:apiParams]) {  //需要缓存并且有缓存
                 
-                
+                //在hasCacheWithParams中已发出
                 NSLog(@"%@ : 这次请求用的是缓存", NSStringFromClass([self.child class]) );
                 
                 return 0;
@@ -177,8 +177,8 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
                 switch (self.child.requestType)    // get/post/upload
                 {
                     case SJAPIManagerRequestTypeGet:
+                        /* 示例
                     {
-                        NSLog(@"%@",self.child.requestUrl);
                         requestId = [[SJApiProxy sharedInstance] callGETWithParams:apiParams url:self.child.requestUrl headers:headers methodName:self.getMethodName success:^(SJAPIResponse *response) {
                             
                             [self successedOnCallingAPI:response];
@@ -191,24 +191,12 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
                         
                         [self.requestIdList addObject:@(requestId)];
                     }
-                        //                        AXCallAPI(GET, requestId);
+                         */
+                        AXCallAPI(GET, requestId);
                         break;
                         
                     case SJAPIManagerRequestTypePost:
-                    {
-                        requestId = [[SJApiProxy sharedInstance] callPOSTWithParams:apiParams url:self.child.requestUrl headers:headers methodName:self.getMethodName success:^(SJAPIResponse *response) {
-                            
-                            [self successedOnCallingAPI:response];
-                            
-                        } fail:^(SJAPIResponse *response) {
-                            
-                            [self failedOnCallingAPI:response withErrorType:SJAPIManagerErrorTypeDefault];
-                            
-                        }];
-                        
-                        [self.requestIdList addObject:@(requestId)];
-                    }
-                        //                        AXCallAPI(POST, requestId);
+                        AXCallAPI(POST, requestId);
                         break;
                         
                     case SJAPIManagerRequestTypeUpload:
@@ -235,16 +223,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     return requestId;
 }
 
-#pragma mark - api callbacks
-
-//- (void)apiCallBack:(SJAPIResponse *)response
-//{
-//    if (response.status == SJSURLResponseStatusSuccess) {
-//        [self successedOnCallingAPI:response];
-//    }else{
-//        [self failedOnCallingAPI:response withErrorType:SJAPIManagerErrorTypeTimeout];
-//    }
-//}
+#pragma mark - API回调执行的方法
 
 - (void)successedOnCallingAPI:(SJAPIResponse *)response
 {
@@ -253,9 +232,12 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     } else {
         self.fetchedRawData = [response.responseData copy];
     }
+    
     [self removeRequestIdWithRequestID:response.requestId];
+    
     if ([self isCorrectWithResponseData:response.content]) {
         
+        //检查get请求/需要缓存/不是缓存数据  就保存缓存
         if (self.child.requestType == SJAPIManagerRequestTypeGet && [self shouldCache] && !response.isCache) {
             [self.cache saveCacheWithData:response.responseData methodName:[self getMethodName] requestParams:response.requestParams];
         }
@@ -277,7 +259,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     [self.delegate managerCallAPIDidFailed:self];
     [self afterPerformFailWithResponse:response];
     
-    if (errorType == SJAPIManagerErrorTypeDefault) {
+    if (errorType == SJAPIManagerErrorTypeDefault) { //SJAPIManagerErrorTypeDefault的时候都是请求已发出
         
         if (response.status == SJSURLResponseStatusTimeout) {
             self.errorType = SJAPIManagerErrorTypeTimeout;
@@ -288,6 +270,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
             [MBProgressHUD showError:@"网络错误"];
         }
     }
+    
     if (errorType == SJAPIManagerErrorTypeNoNetWork) {
         [MBProgressHUD showError:@"网络异常, 请检查网络设置"];
         self.errorType = SJAPIManagerErrorTypeNoNetWork;
@@ -295,19 +278,37 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     
 }
 
-#pragma mark - method for interceptor
 
+#pragma mark - --BaseManager实现的子类或者代理的方法
+#pragma mark - interceptor(拦截器)方法
 /*
- 拦截器的功能可以由子类通过继承实现，也可以由其它对象实现,两种做法可以共存
- 当两种情况共存的时候，子类重载的方法一定要调用一下super
- 然后它们的调用顺序是BaseManager会先调用子类重载的实现，再调用外部interceptor的实现
+ 拦截器的功能可以由子类通过继承实现，也可以由其它对象实现, 两种做法可以共存(共存是指一个接口, 既需要子类验证, 也需要其他类验证, 相当于要经过两次验证)
+ 当两种情况共存的时候，子类重写的方法最后(或之前) 一定要调用一下super
+ 这样才可以保证, 子类重新的方法被调用之后, 其他类的验证也可以被调用
  
  notes:
- 正常情况下，拦截器是通过代理的方式实现的，因此可以不需要以下这些代码
+ 正常情况下，拦截器是通过代理的方式(同requestUrl等)实现的，因此可以不需要以下这些代码
  但是为了将来拓展方便，如果在调用拦截器之前manager又希望自己能够先做一些事情，所以这些方法还是需要能够被继承重载的
  所有重载的方法，都要调用一下super,这样才能保证外部interceptor能够被调到
  这就是decorate pattern
  */
+- (BOOL)shouldCallAPIWithParams:(NSDictionary *)params
+{
+    //子类接口指定了interceptor并且实现了shouldCallAPIWithParams方法, 如果没有指定这个代理, 直接返回YES
+    if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:shouldCallAPIWithParams:)]) {
+        return [self.interceptor manager:self shouldCallAPIWithParams:params];
+    } else {
+        return YES;
+    }
+}
+
+- (void)afterCallingAPIWithParams:(NSDictionary *)params
+{
+    if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:afterCallAPIWithParams:)]) {
+        [self.interceptor manager:self afterCallAPIWithParams:params];
+    }
+}
+
 - (void)beforePerformSuccessWithResponse:(SJAPIResponse *)response
 {
     self.errorType = SJAPIManagerErrorTypeSuccess;
@@ -317,25 +318,17 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     }
 }
 
-- (void)afterPerformSuccessWithResponse:(SJAPIResponse *)response
-{
-    if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:afterPerformSuccessWithResponse:)]) {
-        [self.interceptor manager:self afterPerformSuccessWithResponse:response];
-    }
-//    if (self.isPageMode) {
-//        if(self.isLoadNew){
-//            page=1;
-//            pageSize=[response.result[@"count"] intValue];
-//            total=[response.result[@"total"] integerValue];
-//        }
-//        self.isLastPage=(total<=page*pageSize);
-//    }
-}
-
 - (void)beforePerformFailWithResponse:(SJAPIResponse *)response
 {
     if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:beforePerformFailWithResponse:)]) {
         [self.interceptor manager:self beforePerformFailWithResponse:response];
+    }
+}
+
+- (void)afterPerformSuccessWithResponse:(SJAPIResponse *)response
+{
+    if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:afterPerformSuccessWithResponse:)]) {
+        [self.interceptor manager:self afterPerformSuccessWithResponse:response];
     }
 }
 
@@ -346,16 +339,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     }
 }
 
-//只有返回YES才会继续调用API
-- (BOOL)shouldCallAPIWithParams:(NSDictionary *)params
-{
-    if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:shouldCallAPIWithParams:)]) {
-        return [self.interceptor manager:self shouldCallAPIWithParams:params];
-    } else {
-        return YES;
-    }
-}
-
+#pragma mark -- 验证器(validator)方法
 -(BOOL)isCorrectWithParamsData:(NSDictionary*)params
 {
     if (self != self.validator && [self.validator respondsToSelector:@selector(manager:isCorrectWithParamsData:)]) {
@@ -374,46 +358,7 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     }
 }
 
--(NSString*)getMethodName
-{
-    if ([self.child respondsToSelector:@selector(methodName)]) {
-        return [self.child methodName];
-    }else{
-
-//        NSString *methodName = [NSString stringWithFormat:@"%@_%@_%@",[self convertRequestType:self.child.requestType], SBAPPDelegate.token ? SBAPPDelegate.token : @"token", self.child.requestUrl];
-        
-        NSString *methodName = [NSString stringWithFormat:@"%@_%@",[self convertRequestType:self.child.requestType], self.child.requestUrl];
-        return methodName;
-    }
-}
-
--(NSString*) convertRequestType:(SJAPIManagerRequestType)type
-{
-    NSString* str;
-    switch (type) {
-        case SJAPIManagerRequestTypePost:
-            str = @"POST";
-            break;
-        case SJAPIManagerRequestTypeGet:
-            str = @"GET";
-            break;
-        case SJAPIManagerRequestTypeUpload:
-            str = @"UPLOAD";
-            break;
-        default:
-            break;
-    }
-    return str;
-}
-
-- (void)afterCallingAPIWithParams:(NSDictionary *)params
-{
-    if (self != self.interceptor && [self.interceptor respondsToSelector:@selector(manager:afterCallAPIWithParams:)]) {
-        [self.interceptor manager:self afterCallAPIWithParams:params];
-    }
-}
-
-#pragma mark - method for child
+#pragma mark - child(子类即实际接口类)方法
 - (void)cleanData
 {
     IMP childIMP = [self.child methodForSelector:@selector(cleanData)];
@@ -430,19 +375,20 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     }
 }
 
-//如果需要在调用API之前额外添加一些参数，比如pageNumber和pageSize之类的就在这里添加
+//如果需要在调用所有API之前统一额外添加一些参数，比如pageNumber和pageSize之类的就在这里添加
 //子类中覆盖这个函数的时候就不需要调用[super reformParams:params]了
 - (NSDictionary *)reformParams:(NSDictionary *)params
 {
     //函数指针，IMP可以从 对象 & SEL的方法得到：
+    //如果child(既用来获取url, type等的类), 就是baseManager的子类
     IMP childIMP = [self.child methodForSelector:@selector(reformParams:)];
     IMP selfIMP = [self methodForSelector:@selector(reformParams:)];
     
+    //如果child是继承得来的，根本不会走到这个方法里
     if (childIMP == selfIMP) {
         return params;
     } else {
-        // 如果child是继承得来的，那么这里就不会跑到，会直接跑子类中的IMP。
-        // 如果child是另一个对象，就会跑到这里
+        // 如果child是另一个类的对象，就会跑到这里
         NSDictionary *result = nil;
         result = [self.child reformParams:params];
         if (result) {
@@ -453,12 +399,25 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
     }
 }
 
+-(NSString*)getMethodName
+{
+    if ([self.child respondsToSelector:@selector(methodName)]) {
+        return [self.child methodName];
+    }else{
+        
+        //        NSString *methodName = [NSString stringWithFormat:@"%@_%@_%@",[self convertRequestType:self.child.requestType], SBAPPDelegate.token ? SBAPPDelegate.token : @"token", self.child.requestUrl];
+        
+        NSString *methodName = [NSString stringWithFormat:@"%@_%@",[self convertRequestType:self.child.requestType], self.child.requestUrl];
+        return methodName;
+    }
+}
+
 - (BOOL)shouldCache
 {
     return kSJSNeedCache;
 }
 
-#pragma mark - private methods
+#pragma mark - --私有方法
 - (void)removeRequestIdWithRequestID:(NSInteger)requestId
 {
     NSNumber *requestIDToRemove = nil;
@@ -487,6 +446,27 @@ REQUEST_ID = [[SJApiProxy sharedInstance] call##REQUEST_METHOD##WithParams:apiPa
         [self successedOnCallingAPI:response];
     });
     return YES;
+}
+
+
+
+-(NSString*) convertRequestType:(SJAPIManagerRequestType)type
+{
+    NSString* str;
+    switch (type) {
+        case SJAPIManagerRequestTypePost:
+            str = @"POST";
+            break;
+        case SJAPIManagerRequestTypeGet:
+            str = @"GET";
+            break;
+        case SJAPIManagerRequestTypeUpload:
+            str = @"UPLOAD";
+            break;
+        default:
+            break;
+    }
+    return str;
 }
 
 

@@ -10,6 +10,7 @@
 
 @implementation NSObject (AXNetworkingMethods)
 
+//如果self为空, 则返回defaultData, 不为空, 返回自己
 - (id)SJ_defaultValue:(id)defaultData
 {
     if (![defaultData isKindOfClass:[self class]]) {

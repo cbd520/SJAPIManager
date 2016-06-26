@@ -35,7 +35,7 @@
 - (NSString *)cacheRegexKey {
     return [NSString stringWithFormat:@"%@%@", BaseUrl, @"pub/home/2"];
 }
-//@"?&page=%ld&tp=1&size=20"
+
 - (NSString *)requestUrl {
     return [NSString stringWithFormat:@"%@%@", BaseUrl, @"pub/home/2"];
 }
@@ -50,9 +50,11 @@
     if (!self.isLoadNew) {
         params[@"page"]=@(page);
     }
-
+    params[@"tp"] = @(1);
     return [params copy];
 }
+
+
 
 -(void)beforePerformSuccessWithResponse:(SJAPIResponse *)response
 {

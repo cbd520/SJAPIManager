@@ -12,8 +12,11 @@
 
 typedef void(^suceesBlock)(AFHTTPRequestOperation *operation, id reponseObject);
 typedef void(^failureBlock)(AFHTTPRequestOperation *operation, NSError *err);
+
 typedef void(^AXCallback)(SJAPIResponse * response);
+
 typedef void(^multipart)(id<AFMultipartFormData>);
+
 typedef NS_ENUM(NSInteger, RequestType) {
     REQUEST_GET = 0,
     REQUEST_POST,
