@@ -17,8 +17,8 @@
  4. 在控制器内懒加载TestAPI, 同时设置_testAPI.delegate = self, 指定该控制器为接口的代理, 实现下面两个回调方法
  - (void)managerCallAPIDidSuccess:(SJAPIBaseManager *)manager;
  - (void)managerCallAPIDidFailed:(SJAPIBaseManager *)manager;
- 
- 5. 如果要在特定时刻或者某些情况删除缓存, 可以发通知实现, 通知的userInfo这种格式@{InvalidCacheKey : @[NSClassFromString(@"TestAPI"), ]}
+ 5. 在要调用接口的时候,[self.testAPI loadData]即可;
+ 6. 如果要在特定时刻或者某些情况删除缓存, 可以发通知实现, 通知的userInfo这种格式@{InvalidCacheKey : @[NSClassFromString(@"TestAPI"), ]}
  -(void)handleInvalidCache:(NSNotification*)notify
  {
     NSDictionary* dict = notify.userInfo;
@@ -27,7 +27,7 @@
         [[SJCache sharedInstance] deleteCacheWithClass:cls];
     }
  }
- 6. 其他用法见源码, 自己理解
+ 7. 其他用法见源码, 自己理解
  */
 
 @class SJAPIBaseManager;
